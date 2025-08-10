@@ -1,0 +1,28 @@
+# Node
+node_modules/
+client/node_modules/
+server/node_modules/
+
+# Bygge-output
+dist/
+build/
+.next/
+.vercel/
+.cache/
+
+# Environment filer
+.env
+*.env
+
+# Database (Prisma dev db)
+server/prisma/dev.db
+*.sqlite
+*.sqlite-journal
+
+# OS og editor filer
+.DS_Store
+Thumbs.db
+
+# VS Code settings (undtagen extensions.json)
+.vscode/*
+!.vscode/extensions.json

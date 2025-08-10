@@ -1,0 +1,109 @@
+// ----- generator + datasource -----
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ----- ENUMS (vigtige) -----
+enum TaskStatus {
+  NEW
+  PLANNED
+  IN_PROGRESS
+  DELIVERED
+  CANCELLED
+}
+
+enum BidStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  WITHDRAWN
+}
+
+enum CarrierDocType {
+  INSURANCE
+  LICENSE
+  CVR
+  OTHER
+}
+
+// ----- MODELS -----
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  role      String
+  approved  Boolean  @default(false)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  // Back-relations (skal matche relation-navne i Task)
+  tasksAsCustomer Task[] @relation("CustomerTasks")
+  tasksAsCarrier  Task[] @relation("CarrierTasks")
+
+  // 👇 NY tilbage-relation til Bud som transportør
+  bidsAsCarrier Bid[] @relation("CarrierBids")
+
+  carrierDocs     CarrierDocument[] // dokumenter uploadet for/af carrier
+
+}
+
+model Task {
+  id     Int        @id @default(autoincrement())
+  title  String
+  status TaskStatus @default(NEW)
+  paid   Boolean    @default(false)
+
+  price       Float?
+  pickup      String?
+  dropoff     String?
+  scheduledAt DateTime?
+
+  customerId Int?
+  customer   User? @relation("CustomerTasks", fields: [customerId], references: [id])
+
+  carrierId Int?
+  carrier   User? @relation("CarrierTasks", fields: [carrierId], references: [id])
+
+  bids Bid[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Bid {
+  id      Int       @id @default(autoincrement())
+  amount  Float
+  message String?
+  status  BidStatus @default(PENDING)
+
+  taskId Int
+  task   Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  carrierId Int
+  carrier   User @relation("CarrierBids", fields: [carrierId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([taskId])
+  @@index([carrierId])
+}
+
+model CarrierDocument {
+  id         Int            @id @default(autoincrement())
+  userId     Int
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type       CarrierDocType
+  url        String
+  filename   String?
+  verified   Boolean        @default(false)
+  notes      String?
+  uploadedAt DateTime       @default(now())
+
+  @@index([userId])
+}

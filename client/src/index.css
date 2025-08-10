@@ -1,0 +1,314 @@
+@import "tailwindcss/preflight";
+@import "tailwindcss/utilities";
+
+:root {
+  --brand-blue: #0077cc;
+  --brand-blue-hover: #005fa3;
+  --brand-green: #28a745;
+  --brand-green-hover: #1e7e34;
+  --brand-yellow: #ffc107;
+  --brand-red: #dc3545;
+  --bg-light: #f9fafb;
+  --bg-dark: #1f2937;
+}
+
+html, body, #app {
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background-color: var(--bg-light);
+  color: #111;
+}
+
+/* Wrapper backgrounds based on role */
+[data-role="admin"] { --accent: var(--brand-blue); }
+[data-role="carrier"] { --accent: var(--brand-green); }
+[data-role="customer"] { --accent: var(--brand-yellow); }
+
+.app-bg {
+  background-color: var(--bg-light);
+  min-height: 100vh;
+}
+
+/* Topbar */
+.topbar {
+  @apply flex items-center justify-between px-6 py-4 bg-white border-b;
+}
+
+/* Container widths */
+.container-wide {
+  @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+}
+
+/* Buttons */
+.btn {
+  @apply px-3 py-2 rounded bg-gray-200 hover:bg-gray-300 text-sm;
+}
+.btn--primary {
+  background-color: var(--accent);
+  color: white;
+}
+.btn--primary:hover {
+  filter: brightness(0.9);
+}
+.btn--danger {
+  @apply bg-red-600 text-white;
+}
+.btn--danger:hover {
+  @apply bg-red-700;
+}
+.btn--warn {
+  @apply bg-yellow-500 text-white;
+}
+.btn--warn:hover {
+  @apply bg-yellow-600;
+}
+.btn--ghost {
+  @apply bg-transparent hover:bg-gray-100;
+}
+.btn--tab {
+  @apply bg-gray-100 hover:bg-gray-200;
+}
+.btn--tab-active {
+  background-color: var(--accent);
+  color: white;
+}
+
+/* Cards */
+.card {
+  @apply bg-white rounded shadow-sm p-4;
+}
+
+/* Inputs / Select */
+.input {
+  @apply border rounded px-3 py-2 w-full;
+}
+.select {
+  @apply border rounded px-3 py-2;
+}
+
+/* Badges */
+.badge {
+  @apply text-xs px-2 py-1 rounded;
+}
+.badge-green { @apply bg-green-100 text-green-700; }
+.badge-red { @apply bg-red-100 text-red-700; }
+.badge-yellow { @apply bg-yellow-100 text-yellow-700; }
+.badge-blue { @apply bg-blue-100 text-blue-700; }
+.badge-gray { @apply bg-gray-100 text-gray-700; }
+
+/* Utility text colors */
+.muted { @apply text-gray-500; }
+
+/* Accent demo box */
+.demo-accent {
+  background-color: var(--accent);
+  color: white;
+}
+
+/* Menu row */
+.menu-row { @apply flex gap-2 flex-wrap; }
+
+/* Kanban board */
+.kanban {
+  @apply grid gap-4 md:grid-cols-2 lg:grid-cols-5;
+}
+.kanban__col {
+  @apply bg-white rounded shadow-sm p-3 flex flex-col gap-2;
+}
+.kanban__title {
+  @apply font-semibold mb-2;
+}
+.kanban__card {
+  @apply border rounded p-3 bg-gray-50 hover:bg-gray-100;
+}
+
+/* ... eksisterende imports og :root ... */
+
+.header {
+  @apply flex items-center justify-between px-6 py-4 bg-white border-b shadow-sm;
+}
+.header__logo {
+  @apply flex items-center gap-3;
+}
+.header__logo img {
+  height: 40px;
+}
+.header__title {
+  @apply text-xl font-bold;
+}
+
+.sidebar {
+  @apply bg-white border-r w-56 min-h-screen flex flex-col;
+}
+.sidebar__nav {
+  @apply flex-1 flex flex-col;
+}
+.sidebar__link {
+  @apply px-4 py-3 text-sm hover:bg-gray-100 cursor-pointer;
+}
+.sidebar__link--active {
+  background-color: var(--accent);
+  color: white;
+}
+.sidebar__footer {
+  @apply p-4 border-t text-xs text-gray-500;
+}
+
+.main {
+  @apply flex-1 p-6 bg-gray-50;
+}
+
+/* ===== Header m. logo ===== */
+.header {
+  display:flex; align-items:center; justify-content:space-between;
+  padding: 1rem 1.5rem; background:#fff; border-bottom:1px solid #e5e7eb;
+  position: sticky; top: 0; z-index: 20;
+}
+.header__left { display:flex; align-items:center; gap:.75rem; min-width:0; }
+.header__logo { display:flex; align-items:center; }
+.header__logo img { height:40px; width:auto; display:block; }
+.header__title { font-size:1.125rem; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.header__right { display:flex; align-items:center; gap:.5rem; }
+
+/* ===== Shell layout ===== */
+.shell { min-height:100vh; display:flex; background: var(--bg-light); }
+
+/* ===== Sidebar ===== */
+/* ===== SIDEBAR: fælles baseline for alle links ===== */
+.sidebar__nav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;                 /* konstant mellemrum mellem punkter */
+}
+
+/* Hovedpunkter */
+.sidebar__link,
+.sidebar__sublink {
+  /* Layout */
+  display: flex;            /* undgå line-height hacks */
+  align-items: center;      /* vertikal centrering */
+  gap: 10px;
+  width: 100%;
+  min-height: 42px;         /* FAST højde */
+  padding: 0 12px;          /* FAST padding */
+  box-sizing: border-box;
+
+  /* Typografi – ændres IKKE mellem aktiv/inaktiv */
+  font-size: 14px;
+  font-weight: 500;
+
+  /* Visuelt */
+  border-radius: 8px;
+  color: #1f2937;           /* gray-800 */
+  background: transparent;
+  border: 1px solid transparent;
+  text-align: left;
+  cursor: pointer;
+
+  /* Smooth hover uden at påvirke layout */
+  transition: background-color .15s ease, color .15s ease, border-color .15s ease;
+}
+
+/* Hover – samme størrelse */
+.sidebar__link:hover,
+.sidebar__sublink:hover {
+  background: #f3f4f6;      /* gray-100 */
+}
+
+/* Aktiv – ændrer KUN farver, ikke height/padding/font */
+.sidebar__link--active,
+.sidebar__sublink--active {
+  background: #2563eb;      /* primary */
+  color: #fff;
+}
+
+/* Undermenu container (indryk) */
+.sidebar__submenu {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 6px 0 0 8px;      /* let indryk */
+  padding-left: 6px;
+  border-left: 2px solid #e5e7eb;
+}
+
+/* Smule mindre visuel vægt på sublinks, men samme HØJDE */
+.sidebar__sublink {
+  font-weight: 500;
+  background: #fafafa;
+}
+.sidebar__sublink:hover {
+  background: #f3f4f6;
+}
+.sidebar__sublink--active {
+  background: #1e40af;  /* lidt mørkere end hoved-aktive */
+}
+
+/* Sektionstitel */
+.sidebar__section {
+  margin: 12px 0 4px;
+  padding: 0 2px;
+  font-size: 12px;
+  color: #6b7280;           /* gray-500 */
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+/* ===== Main area ===== */
+.main { flex:1; display:flex; flex-direction:column; min-width:0; }
+.main__content { padding: 1.5rem; max-width: 1120px; margin-inline:auto; }
+
+/* små helpers der manglede */
+.muted { color:#6b7280; }
+.container-wide { max-width:1120px; margin-inline:auto; padding:0 1rem; }
+.demo-accent { background: var(--accent); color:#fff; padding:.75rem; border-radius:.5rem; }
+
+/* Kanban (matcher din komponent) */
+.kanban { display:grid; gap:1rem; grid-template-columns: 1fr; }
+@media (min-width: 768px) { .kanban { grid-template-columns: repeat(3, 1fr); } }
+.kanban__col { background:#fff; border:1px solid #e5e7eb; border-radius:.75rem; padding:.75rem; }
+.kanban__title { font-size:.9rem; font-weight:600; margin-bottom:.5rem; }
+.kanban__card { background:#fff; border:1px solid #e5e7eb; border-radius:.5rem; padding:.75rem; display:flex; align-items:center; justify-content:space-between; }
+
+
+.table__header,
+.table__row {
+  display: grid;
+  grid-template-columns: 2fr 1.5fr 1.5fr 1.2fr 1fr;
+  gap: .75rem;
+  align-items: center;
+}
+
+.table__header {
+  padding: .75rem 1rem;
+  border-bottom: 1px solid #e5e7eb;
+  font-weight: 600;
+  color: #0f172a;
+  background: #f8fafc;
+  border-radius: .75rem .75rem 0 0;
+}
+
+.table__body { display: grid; }
+
+.table__row {
+  padding: .75rem 1rem;
+  border-bottom: 1px solid #eef2f7;
+  background: #fff;
+}
+
+.table__row:last-child { border-bottom: 0; border-radius: 0 0 .75rem .75rem; }
+
+.table__cell { min-width: 0; }
+
+.row__id { display: flex; align-items: center; gap: .6rem; }
+.avatar {
+  width: 32px; height: 32px; border-radius: 999px;
+  background: #e2e8f0; color: #0f172a; display:flex; align-items:center; justify-content:center;
+  font-weight: 700; font-size: .85rem;
+}
+.row__title { font-weight: 600; color: #0f172a; }
+.row__badges { display: flex; gap: .35rem; flex-wrap: wrap; }
