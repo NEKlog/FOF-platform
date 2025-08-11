@@ -1,43 +1,7 @@
 {
-  "name": "client",
+  "name": "fof-client",
   "private": true,
-  "version": "0.0.0",
-  "scripts": {
-    "predev": "npx prisma generate --schema ./server/prisma/schema.prisma",
-    "dev": "concurrently -k -n CLIENT,SERVER -c \"cyan.bold,green.bold\" \"npm:client\" \"npm:server\"",
-    "client": "vite",
-    "server": "cd server && nodemon index.mjs",
-    "build": "vite build",
-    "preview": "vite preview",
-    "lint": "eslint .",
-    "start": "node server/index.mjs",
-    "prisma:generate": "cd server && npx prisma generate --schema ./prisma/schema.prisma",
-    "prisma:migrate": "cd server && npx prisma migrate dev --name update --schema ./prisma/schema.prisma",
-    "prisma:studio": "cd server && npx prisma studio --schema ./prisma/schema.prisma",
-    "prisma:push": "cd server && npx prisma db push --schema ./prisma/schema.prisma"
-  },
-  "dependencies": {
-    "@prisma/client": "^6.13.0",
-    "axios": "^1.11.0",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "react-router-dom": "^7.7.1"
-  },
-  "devDependencies": {
-    "@eslint/js": "^9.30.1",
-    "@types/react": "^19.1.8",
-    "@types/react-dom": "^19.1.6",
-    "@vitejs/plugin-react-swc": "^3.11.0",
-    "autoprefixer": "^10.4.21",
-    "concurrently": "^8.2.0",
-    "eslint": "^9.30.1",
-    "eslint-plugin-react-hooks": "^5.2.0",
-    "eslint-plugin-react-refresh": "^0.4.20",
-    "globals": "^16.3.0",
-    "nodemon": "^3.1.10",
-    "postcss": "^8.5.6",
-    "prisma": "^6.13.0",
-    "tailwindcss": "^4.1.11",
-    "vite": "^7.0.6"
-  }
+  "scripts": { "dev": "vite", "build": "vite build", "preview": "vite preview" },
+  "dependencies": { "react": "^18.3.0", "react-dom": "^18.3.0" },
+  "devDependencies": { "vite": "^5.0.0", "@vitejs/plugin-react-swc": "^3.5.0" }
 }

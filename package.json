@@ -1,0 +1,12 @@
+{
+  "name": "fof",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm --prefix client run dev\" \"npm --prefix server run dev\"",
+    "client": "npm --prefix client run dev",
+    "server": "node --env-file=server/.env server/index.mjs"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  }
+}
