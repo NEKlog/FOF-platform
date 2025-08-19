@@ -11,3 +11,7 @@ out/
 # Prisma/SQLite lokale databaser
 prisma/*.db
 prisma/*.db-journal
+
+# Prisma nested DB files
+prisma/**/*.db
+prisma/**/*.db-journal
