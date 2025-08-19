@@ -1,61 +1,34 @@
-import { NextResponse, type NextRequest } from "next/server";
-import { jwtVerify } from "jose";
+import { NextRequest, NextResponse } from "next/server";
 
-const SECRET = new TextEncoder().encode(process.env.JWT_SECRET || "dev-secret");
-const COOKIE = "auth";
-
-// hvilke prefixes der kræver login / rolle
-const PUBLIC = ["/login", "/api/auth/login", "/api/auth/register", "/api/auth/logout", "/_next", "/favicon", "/api/dev"]; // udvid efter behov
-const ROLE_PREFIX = {
-  "/admin": ["ADMIN"],
-  "/carrier": ["CARRIER"],
-  "/customer": ["CUSTOMER"],
-};
-
-export default async function middleware(req: NextRequest) {
+export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // offentlige paths
-  if (PUBLIC.some((p) => pathname.startsWith(p))) return NextResponse.next();
+  // statiske filer/Next-internals
+  if (
+    pathname.startsWith("/_next") ||
+    pathname.startsWith("/static") ||
+    pathname === "/favicon.ico" ||
+    pathname.match(/\.(?:png|jpg|jpeg|webp|gif|svg|ico|css|js|map|txt)$/)
+  ) return NextResponse.next();
 
-  // kræver login? (admin/carrier/customer dashboard + jeres beskyttede API’er)
-  const needsAuth =
-    pathname.startsWith("/admin") ||
-    pathname.startsWith("/carrier") ||
-    pathname.startsWith("/customer") ||
-    pathname.startsWith("/api");
+  // altid åbne API’er (login/registrering, geo, aktivering)
+  if (
+    pathname.startsWith("/api/auth/") ||
+    pathname.startsWith("/api/geo/") ||
+    pathname.startsWith("/api/customer/tasks/activate")
+  ) return NextResponse.next();
 
-  if (!needsAuth) return NextResponse.next();
-
-  const token = req.cookies.get(COOKIE)?.value;
-  if (!token) return NextResponse.redirect(new URL("/login", req.url));
-
-  try {
-    const { payload } = await jwtVerify(token, SECRET);
-    const role = String(payload.role || "").toUpperCase();
-    const approved = Boolean(payload.approved);
-    const active = Boolean(payload.active);
-
-    if (!approved || !active) {
-      return NextResponse.redirect(new URL("/login?m=inactive", req.url));
-    }
-
-    // rollekrav per prefix
-    for (const prefix in ROLE_PREFIX) {
-      if (pathname.startsWith(prefix)) {
-        const allowed = ROLE_PREFIX[prefix as keyof typeof ROLE_PREFIX];
-        if (!allowed.includes(role)) {
-          return NextResponse.redirect(new URL("/login?m=forbidden", req.url));
-        }
-      }
-    }
-
+  // beskyt kun egentlige customer-API’er
+  if (pathname.startsWith("/api/customer/")) {
+    const token = req.cookies.get("auth")?.value;
+    if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     return NextResponse.next();
-  } catch {
-    return NextResponse.redirect(new URL("/login", req.url));
   }
+
+  // alle pages er åbne (hele booking-flowet kan nå step 3)
+  return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/((?!.+\\.[\\w]+$|_next).*)", "/"], // alt undtagen statiske
+  matcher: ["/((?!.*\\.(?:png|jpg|jpeg|webp|gif|svg|ico|css|js|map|txt)$).*)"],
 };

@@ -8,7 +8,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ----- ENUMS (vigtige) -----
+// ----- ENUMS (eksisterende) -----
 enum TaskStatus {
   NEW
   PLANNED
@@ -31,6 +31,64 @@ enum CarrierDocType {
   OTHER
 }
 
+enum TxType {
+  TASK_PRICE
+  COMMISSION
+  CARRIER_EARNED
+  PAYOUT
+}
+
+enum BookingCategory {
+  MOVING
+  FURNITURE
+  PARCEL
+  PALLET_LTL
+  FTL
+  FREIGHT
+}
+
+// ----- ENUMS (NYE til booking) -----
+enum ServiceLevel {
+  CURBSIDE
+  DRIVER_HELP
+  TWO_MEN
+}
+
+enum ParkingDistance {
+  D0_20
+  D21_50
+  D51_100
+  OVER_100
+}
+
+enum BigItemBucket {
+  I0_5
+  I6_10
+  I11_20
+  I21_30
+  I31_50
+  OVER_50
+}
+
+enum BoxesBucket {
+  B1_10
+  B11_20
+  B21_30
+  B31_40
+  B41_50
+  B51_70
+  B71_100
+  B101_200
+  OVER_200
+}
+
+enum ItemType {
+  PARCEL
+  PALLET
+  FURNITURE
+  OTHER
+}
+
 // ----- MODELS -----
 model User {
   id        Int      @id @default(autoincrement())
@@ -41,15 +99,23 @@ model User {
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
 
-  // Back-relations (skal matche relation-navne i Task)
-  tasksAsCustomer Task[] @relation("CustomerTasks")
-  tasksAsCarrier  Task[] @relation("CarrierTasks")
+  tasksAsCustomer Task[]            @relation("CustomerTasks")
+  tasksAsCarrier  Task[]            @relation("CarrierTasks")
+  bidsAsCarrier   Bid[]             @relation("CarrierBids")
+  carrierDocs     CarrierDocument[]
 
-  // 👇 NY tilbage-relation til Bud som transportør
-  bidsAsCarrier Bid[] @relation("CarrierBids")
+  // chat
+  messagesFrom Message[] @relation("MessagesFrom")
+  messagesTo   Message[] @relation("MessagesTo")
 
-  carrierDocs     CarrierDocument[] // dokumenter uploadet for/af carrier
+  // admin publish (back-rel)
+  publishedTasks Task[] @relation("PublishedBy")
 
+  // reset tokens
+  passwordResetTokens PasswordResetToken[]
+
+  // whitelist back-rel
+  whitelist TaskCarrierWhitelist[]
 }
 
 model Task {
@@ -58,18 +124,75 @@ model Task {
   status TaskStatus @default(NEW)
   paid   Boolean    @default(false)
 
-  price       Float?
-  pickup      String?
-  dropoff     String?
-  scheduledAt DateTime?
+  price         Float?
+  commissionPct Float?
+  pickup        String?
+  dropoff       String?
+  scheduledAt   DateTime?
 
+  // === Bookingstruktur ===
+  category BookingCategory?
+  service  ServiceLevel?
+
+  // Afhentning (A)
+  pickupLabel    String?
+  pickupLat      Float?
+  pickupLon      Float?
+  pickupFrom     DateTime?
+  pickupTo       DateTime?
+  pickupFloor    Int?
+  pickupElevator Boolean          @default(false)
+  pickupParking  ParkingDistance?
+  pickupAreaM2   Int?
+  pickupStorage  Boolean          @default(false)
+  contactAName   String?
+  contactAPhone  String?
+
+  // Levering (B)
+  dropoffLabel    String?
+  dropoffLat      Float?
+  dropoffLon      Float?
+  dropoffFrom     DateTime?
+  dropoffTo       DateTime?
+  dropoffFloor    Int?
+  dropoffElevator Boolean          @default(false)
+  dropoffParking  ParkingDistance?
+  dropoffAreaM2   Int?
+  dropoffStorage  Boolean          @default(false)
+  contactBName    String?
+  contactBPhone   String?
+
+  // Flytning-specifikt
+  heavyOver70 Boolean        @default(false)
+  bigItems    BigItemBucket?
+  boxes       BoxesBucket?
+
+  // Publicerings-/aktiveringsflow
+  requiresActivation Boolean   @default(true)
+  activationToken    String?   @unique
+  activationExpires  DateTime?
+
+  isPublished   Boolean   @default(false)
+  visibleAfter  DateTime?
+  publishedAt   DateTime?
+  publishedById Int?
+  publishedBy   User?     @relation("PublishedBy", fields: [publishedById], references: [id])
+
+  // Relationer
   customerId Int?
   customer   User? @relation("CustomerTasks", fields: [customerId], references: [id])
 
   carrierId Int?
   carrier   User? @relation("CarrierTasks", fields: [carrierId], references: [id])
 
-  bids Bid[]
+  bids         Bid[]
+  review       Review?
+  messages     Message[]
+  transactions Transaction[]
+
+  // Varelinjer + whitelist
+  items     TaskItem[]
+  whitelist TaskCarrierWhitelist[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -106,4 +229,89 @@ model CarrierDocument {
   uploadedAt DateTime       @default(now())
 
   @@index([userId])
+}
+
+model Review {
+  id         Int      @id @default(autoincrement())
+  taskId     Int      @unique
+  task       Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  customerId Int
+  carrierId  Int
+  rating     Int
+  comment    String?
+  createdAt  DateTime @default(now())
+
+  @@index([customerId])
+  @@index([carrierId])
+}
+
+model Message {
+  id     Int  @id @default(autoincrement())
+  taskId Int
+  task   Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  fromId Int
+  from   User @relation("MessagesFrom", fields: [fromId], references: [id], onDelete: Cascade)
+
+  toId Int
+  to   User @relation("MessagesTo", fields: [toId], references: [id], onDelete: Cascade)
+
+  body      String
+  createdAt DateTime @default(now())
+
+  @@index([taskId])
+  @@index([fromId])
+  @@index([toId])
+}
+
+model Transaction {
+  id        Int      @id @default(autoincrement())
+  taskId    Int
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  carrierId Int?
+  type      TxType
+  amount    Int
+  createdAt DateTime @default(now())
+
+  @@index([taskId])
+  @@index([carrierId])
+}
+
+model PasswordResetToken {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, expiresAt])
+}
+
+// --- NYT: varelinjer
+model TaskItem {
+  id          Int      @id @default(autoincrement())
+  taskId      Int
+  task        Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  type        ItemType
+  description String?
+  lengthCm    Int?
+  widthCm     Int?
+  heightCm    Int?
+  weightKg    Int?
+  count       Int      @default(1)
+
+  @@index([taskId])
+}
+
+// --- NYT: whitelist (synlighed/udvalgte carriers)
+model TaskCarrierWhitelist {
+  taskId    Int
+  carrierId Int
+  task      Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  carrier   User @relation(fields: [carrierId], references: [id], onDelete: Cascade)
+
+  @@id([taskId, carrierId])
+  @@index([carrierId])
 }

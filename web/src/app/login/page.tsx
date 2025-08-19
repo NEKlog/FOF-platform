@@ -12,32 +12,43 @@ export default function LoginPage() {
   const sp = useSearchParams();
   const msg = sp.get("m");
 
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    setErr(null);
-    setLoading(true);
-    try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-      if (!res.ok) {
-        const j = await res.json().catch(() => ({}));
-        throw new Error(j?.error ? JSON.stringify(j.error) : `HTTP ${res.status}`);
-      }
-      // success: vælg dashboard efter backend-rolle (hent /api/auth/me)
-      const me = await fetch("/api/auth/me").then(r => r.json()).catch(() => null);
-      const role = String(me?.user?.role || "").toUpperCase();
-      if (role === "ADMIN") router.replace("/admin");
-      else if (role === "CARRIER") router.replace("/carrier");
-      else router.replace("/customer");
-    } catch (e: any) {
-      setErr(e.message || "Login fejlede");
-    } finally {
-      setLoading(false);
+ async function submit(e: React.FormEvent) {
+  e.preventDefault();
+  setErr(null);
+  setLoading(true);
+  try {
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+
+    const j = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(j?.error ? JSON.stringify(j.error) : `HTTP ${res.status}`);
     }
+
+    // 1) Brug login-svaret direkte
+    const role = String(j?.user?.role || "").toUpperCase();
+
+    // 2) Respektér ?next= fra middleware først
+    const next = sp.get("next");
+    if (next) {
+      router.replace(next);
+      return;
+    }
+
+    // Ellers fald tilbage til rolle-baseret redirect
+    if (role === "ADMIN") router.replace("/admin");
+    else if (role === "CARRIER") router.replace("/carrier");
+    else router.replace("/customer");
+  } catch (e: any) {
+    setErr(e.message || "Login fejlede");
+  } finally {
+    setLoading(false);
   }
+}
+
 
   return (
     <main className="p-6 max-w-md mx-auto space-y-4">

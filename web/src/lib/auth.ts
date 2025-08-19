@@ -1,67 +1,71 @@
+// src/lib/auth.ts
 import { cookies } from "next/headers";
-import { SignJWT, jwtVerify } from "jose";
-import type { JWTPayload } from "jose";
+import jwt from "jsonwebtoken";
 import { prisma } from "@/lib/db";
 
-const SECRET = new TextEncoder().encode(process.env.JWT_SECRET || "dev-secret");
-const COOKIE_NAME = "auth";
+const AUTH_COOKIE = "auth";
 
-type TokenPayload = {
-  sub: string;               // userId (string for JWT, men vi kan caste)
-  role: string;              // ADMIN | CARRIER | CUSTOMER | ...
-  approved: boolean;
-  active: boolean;
-} & JWTPayload;
+type JWTPayload = {
+  sub: string;          // bruger-id som string
+  role: string;         // "ADMIN" | "CUSTOMER" | "CARRIER"
+  approved?: boolean;
+  active?: boolean;
+};
 
-export async function signToken(payload: Omit<TokenPayload, "iat" | "exp">) {
-  const days = Number(process.env.JWT_EXPIRES_DAYS ?? "7");
-  const exp = Math.floor(Date.now() / 1000) + days * 24 * 60 * 60;
-  return await new SignJWT(payload)
-    .setProtectedHeader({ alg: "HS256" })
-    .setIssuedAt()
-    .setExpirationTime(exp)
-    .sign(SECRET);
+const days = Number(process.env.JWT_EXPIRES_DAYS || 7);
+
+export async function signToken(payload: JWTPayload): Promise<string> {
+  if (!process.env.JWT_SECRET) {
+    throw new Error("Missing JWT_SECRET");
+  }
+  return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: `${days}d` });
 }
 
-export async function verifyToken(token: string): Promise<TokenPayload | null> {
+export async function verifyToken(token: string): Promise<JWTPayload | null> {
   try {
-    const { payload } = await jwtVerify<TokenPayload>(token, SECRET);
-    return payload;
+    if (!process.env.JWT_SECRET) return null;
+    return jwt.verify(token, process.env.JWT_SECRET) as JWTPayload;
   } catch {
     return null;
   }
 }
 
 export async function setAuthCookie(token: string) {
-  const c = await cookies();
-  c.set({
-    name: COOKIE_NAME,
-    value: token,
+  const store = (await cookies()) as any; // skrivbar i route handlers
+  store.set(AUTH_COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
     path: "/",
+    maxAge: 60 * 60 * 24 * days,
   });
 }
 
 export async function clearAuthCookie() {
-  const c = await cookies();
-  c.delete(COOKIE_NAME);
+  const store = (await cookies()) as any;
+  store.set(AUTH_COOKIE, "", { path: "/", maxAge: 0 });
 }
 
 export async function getUserFromCookie() {
-  const c = await cookies();
-  const token = c.get(COOKIE_NAME)?.value;
+  const store = await cookies();
+  const token = (store as any).get(AUTH_COOKIE)?.value as string | undefined;
   if (!token) return null;
-  const payload = await verifyToken(token);
-  if (!payload) return null;
 
-  const userId = Number(payload.sub);
-  if (!Number.isInteger(userId)) return null;
+  const decoded = await verifyToken(token);
+  if (!decoded?.sub) return null;
 
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { id: true, email: true, role: true, approved: true, active: true }
-  });
-  return user;
+  const id = Number(decoded.sub);
+  if (!Number.isFinite(id)) return null;
+
+  const user = await prisma.user.findUnique({ where: { id } });
+  return user ?? null;
 }
+
+// Små role-guards til admin/carrier routes
+export async function requireRole(allowed: Array<"ADMIN"|"CUSTOMER"|"CARRIER">) {
+  const me = await getUserFromCookie();
+  const ok = me && allowed.map(x => x.toUpperCase()).includes(String(me.role).toUpperCase());
+  if (!ok) return { error: { status: 403, json: { error: "Forbidden" } } };
+  return { me };
+}
+
